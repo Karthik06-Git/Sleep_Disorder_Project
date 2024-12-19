@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-import warnings
-warnings.filterwarnings("ignore")
-
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
@@ -90,13 +87,13 @@ def feature_scaling(test_data):
 # Feature Encoding 
 
 def feature_encoding(test_data):
-    ohe = OneHotEncoder(sparse_output=False, drop="first", dtype="int64", handle_unknown='ignore')
+    ohe = OneHotEncoder(sparse_output=False, drop="first", handle_unknown='ignore')
     cat_cols = X_train.select_dtypes(include="object").columns.tolist()
     ohe.fit(X_train[cat_cols])
     test_encoded = ohe.transform(test_data[cat_cols])
-    test_encoded_df = pd.DataFrame(test_encoded, columns=ohe.get_feature_names_out(cat_cols)).astype("int64")
+    test_encoded = pd.DataFrame(test_encoded, columns=ohe.get_feature_names_out(cat_cols)).astype("int64")
     test_data.drop(cat_cols, axis=1, inplace=True)
-    test_data = pd.concat([test_encoded_df, test_data], axis=1)
+    test_data = pd.concat([test_encoded, test_data], axis=1)
     return test_data
 
 
@@ -109,9 +106,14 @@ def predict(test_data):
     predicted = model.predict(test_data)
     encoder = LabelEncoder()
     encoder.fit(y_train)
-    output = encoder.inverse_transform(predicted)
-    return output
-    
+    output = encoder.inverse_transform(np.array(predicted))
+    st.subheader("Prediction :-")
+    if output=="None":
+        st.write("Person is Not having any Sleep Disorder")
+    elif output=="Sleep Apnea":
+        st.write('Person is having "Sleep Apnea"')
+    elif output=="Insomnia":
+        st.write('Person is having "Insomnia"')
 
 
     
@@ -127,23 +129,12 @@ def model_pipeline():
         test[col] = test[col].astype(X_train.dtypes[col])
     scaled_test = feature_scaling(test)
     encoded_scaled_test = feature_encoding(scaled_test)
-    final_test_data = encoded_scaled_test
-    output = predict(final_test_data)
-    return output
+    final_test = encoded_scaled_test
+    predict(final_test)
 
 
 left, middle, right = st.columns(3)
 
 ## submit and predict button
 if middle.button("Predict", use_container_width=True):
-
-    model_output = model_pipeline()
-
-    st.subheader("Prediction :-")
-    
-    if model_output=="Sleep Apnea":
-        st.write('Person is having "Sleep Apnea"')
-    elif model_output=="Insomnia":
-        st.write('Person is having "Insomnia"')
-    else :
-        st.write("Person is Not having any Sleep Disorder")
+    st.success(model_pipeline())
