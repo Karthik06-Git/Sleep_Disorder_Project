@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+import warnings
+warnings.filterwarnings("ignore")
+
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
@@ -87,13 +90,13 @@ def feature_scaling(test_data):
 # Feature Encoding 
 
 def feature_encoding(test_data):
-    ohe = OneHotEncoder(sparse_output=False, drop="first", handle_unknown='ignore')
+    ohe = OneHotEncoder(sparse_output=False, drop="first", dtype="int64", handle_unknown='ignore')
     cat_cols = X_train.select_dtypes(include="object").columns.tolist()
     ohe.fit(X_train[cat_cols])
     test_encoded = ohe.transform(test_data[cat_cols])
-    test_encoded = pd.DataFrame(test_encoded, columns=ohe.get_feature_names_out(cat_cols)).astype("int64")
+    test_encoded_df = pd.DataFrame(test_encoded, columns=ohe.get_feature_names_out(cat_cols)).astype("int64")
     test_data.drop(cat_cols, axis=1, inplace=True)
-    test_data = pd.concat([test_encoded, test_data], axis=1)
+    test_data = pd.concat([test_encoded_df, test_data], axis=1)
     return test_data
 
 
@@ -106,7 +109,7 @@ def predict(test_data):
     predicted = model.predict(test_data)
     encoder = LabelEncoder()
     encoder.fit(y_train)
-    output = encoder.inverse_transform(np.array(predicted))
+    output = encoder.inverse_transform(predicted)
     st.subheader("Prediction :-")
     if output=="None":
         st.write("Person is Not having any Sleep Disorder")
@@ -114,6 +117,7 @@ def predict(test_data):
         st.write('Person is having "Sleep Apnea"')
     elif output=="Insomnia":
         st.write('Person is having "Insomnia"')
+    
 
 
     
@@ -130,7 +134,7 @@ def model_pipeline():
     scaled_test = feature_scaling(test)
     encoded_scaled_test = feature_encoding(scaled_test)
     final_test = encoded_scaled_test
-    predict(final_test)
+    return predict(final_test)
 
 
 left, middle, right = st.columns(3)
